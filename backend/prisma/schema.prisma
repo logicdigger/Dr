@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  DOCTOR
+  CLINIC_ADMIN
+  PATIENT
+}
+
+enum AppointmentType {
+  VIDEO
+  IN_CLINIC
+  PHONE
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum SubscriptionPlan {
+  FREE
+  PREMIUM
+  FEATURED
+}
+
+model User {
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  passwordHash        String
+  fullName            String
+  role                Role
+  timezone            String               @default("UTC")
+  phone               String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  doctorProfile       DoctorProfile?
+  managedClinics      Clinic[]             @relation("ClinicManager")
+  appointmentsAsPatient Appointment[]      @relation("PatientAppointments")
+  subscriptions       Subscription[]
+  auditLogs           AuditLog[]
+}
+
+model DoctorProfile {
+  id                  String               @id @default(cuid())
+  userId              String               @unique
+  slug                String               @unique
+  qualifications      String
+  specialization      String
+  experienceYears     Int
+  languages           String
+  certifications      String?
+  consultationFee     Int
+  services            String
+  bio                 String
+  seoTitle            String?
+  seoDescription      String?
+  customDomain        String?
+  isVerified          Boolean              @default(false)
+  hasVideoConsultation Boolean             @default(true)
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  availabilities      AvailabilitySlot[]
+  appointments        Appointment[]        @relation("DoctorAppointments")
+  reviews             Review[]
+  clinicLinks         ClinicDoctor[]
+  videoSessions       VideoSession[]
+  businessProfiles    BusinessProfileSync[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model Clinic {
+  id                  String               @id @default(cuid())
+  name                String
+  slug                String               @unique
+  address             String
+  city                String
+  country             String
+  latitude            Float?
+  longitude           Float?
+  managerId           String
+  manager             User                 @relation("ClinicManager", fields: [managerId], references: [id], onDelete: Cascade)
+  doctors             ClinicDoctor[]
+  appointments        Appointment[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model ClinicDoctor {
+  id          String        @id @default(cuid())
+  clinicId    String
+  doctorId    String
+  department  String?
+  clinic      Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  doctor      DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, doctorId])
+}
+
+model AvailabilitySlot {
+  id          String        @id @default(cuid())
+  doctorId    String
+  dayOfWeek   Int
+  startTime   String
+  endTime     String
+  timezone    String        @default("UTC")
+  doctor      DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+}
+
+model Appointment {
+  id           String            @id @default(cuid())
+  doctorId     String
+  patientId    String
+  clinicId     String?
+  startAt      DateTime
+  endAt        DateTime
+  type         AppointmentType
+  status       AppointmentStatus @default(PENDING)
+  reason       String?
+  notes        String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  doctor       DoctorProfile     @relation("DoctorAppointments", fields: [doctorId], references: [id], onDelete: Cascade)
+  patient      User              @relation("PatientAppointments", fields: [patientId], references: [id], onDelete: Cascade)
+  clinic       Clinic?           @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  videoSession VideoSession?
+}
+
+model Review {
+  id          String        @id @default(cuid())
+  doctorId    String
+  patientName String
+  rating      Int
+  comment     String
+  createdAt   DateTime      @default(now())
+  doctor      DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id          String           @id @default(cuid())
+  userId      String
+  plan        SubscriptionPlan
+  active      Boolean          @default(true)
+  startedAt   DateTime         @default(now())
+  renewsAt    DateTime?
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VideoSession {
+  id            String        @id @default(cuid())
+  doctorId      String
+  appointmentId String        @unique
+  vendor        String
+  roomName      String
+  joinUrl       String
+  createdAt     DateTime      @default(now())
+  doctor        DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  appointment   Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+}
+
+model BusinessProfileSync {
+  id             String        @id @default(cuid())
+  doctorId       String
+  provider       String
+  externalId     String
+  lastSyncedAt   DateTime?
+  statusMessage  String?
+  doctor         DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorId      String
+  action       String
+  entityType   String
+  entityId     String
+  metadataJson String?
+  createdAt    DateTime @default(now())
+  actor        User     @relation(fields: [actorId], references: [id], onDelete: Cascade)
+}

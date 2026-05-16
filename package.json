@@ -1,0 +1,32 @@
+{
+  "name": "doctor-directory-platform",
+  "version": "1.0.0",
+  "description": "Doctor Directory and Virtual Consultation Platform",
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "build": "npm run build -w backend && npm run build -w frontend",
+    "lint": "npm run lint -w backend && npm run lint -w frontend",
+    "test": "npm run test -w backend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/logicdigger/Dr.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/logicdigger/Dr/issues"
+  },
+  "homepage": "https://github.com/logicdigger/Dr#readme",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
