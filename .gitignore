@@ -5,6 +5,9 @@ backend/dist
 frontend/dist
 backend/prisma/dev.db
 backend/prisma/dev.db-journal
+backend/prisma/**/*.db
+backend/prisma/**/*.db-journal
+backend/prisma/seed.js
 .env
 backend/.env
 frontend/.env
